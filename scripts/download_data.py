@@ -1,3 +1,8 @@
+"""
+scripts/download_data.py
+Automated Physionet MIT-BIH Database downloader.
+"""
+
 import os
 import wfdb
 
