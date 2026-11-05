@@ -17,7 +17,7 @@ def channel_attention(x):
     gap = layers.GlobalAveragePooling1D()(x)
     fc1 = layers.Dense(channels // 8, activation='relu')(gap)
     weights = layers.Dense(channels, activation='sigmoid')(fc1)
-    weights = layers.Reshape((1, channels))(weights)
+    weights = layers.Reshape((1, int(channels)))(weights)
     return layers.Multiply()([x, weights])
 
 
@@ -28,7 +28,7 @@ def build_mshan(input_shape=config.WINDOW_SIZE, num_classes=config.NUM_CLASSES):
     c1_7 = layers.Conv1D( 32, 7, padding='same', activation='relu')(inputs)
     c1_13 = layers.Conv1D(32, 13, padding='same', activation='relu')(inputs)
     c1_19 = layers.Conv1D(32, 19, padding='same', activation='relu')(inputs)
-    b1 = layers.Concentrate(axis=-1)([c1_7, c1_13, c1_19]) #96 channels
+    b1 = layers.Concatenate(axis=-1)([c1_7, c1_13, c1_19]) #96 channels
     
     # Hierarchical Attention
     t_att = temporal_attention(b1)
@@ -38,19 +38,19 @@ def build_mshan(input_shape=config.WINDOW_SIZE, num_classes=config.NUM_CLASSES):
     c2_11 = layers.Conv1D(64, 11, padding='same', activation='relu')(c_att)
     c2_17 = layers.Conv1D(64, 17, padding='same', activation='relu')(c_att)
     c2_23 = layers.Conv1D(64, 23, padding='same', activation='relu')(c_att)
-    b2 = layers.Concentrate(axis=-1)([c2_11, c2_17, c2_23]) #192 channels
+    b2 = layers.Concatenate(axis=-1)([c2_11, c2_17, c2_23]) #192 channels
     
     # Residual Shortcut & Layer Normalization
     shortcut = layers.Conv1D(192, 1, padding='same')(b1)
     res = layers.Add()([b2, shortcut])
-    norm = layers.Layernormalization(epsilon=1e-6)(res)
+    norm = layers.LayerNormalization(epsilon=1e-6)(res)
     
     # Temporal Recurrent Modelling
     gru1 = layers.GRU(128, return_sequences=True)(norm)
     gru2 = layers.GRU(64, return_sequences=False)(gru1)
     
     # Classification Head
-    dense = layers.Dense(35, activation='relu', activation='relu', kernel_regularizer=regularizers.l2(config.L2_REG))(gru2)
+    dense = layers.Dense(35, activation='relu', kernel_regularizer=regularizers.l2(config.L2_REG))(gru2)
     drop = layers.Dropout(config.DROPOUT_RATE)(dense)
     outputs = layers.Dense(num_classes, activation='softmax', name="prediction")(drop)
 
