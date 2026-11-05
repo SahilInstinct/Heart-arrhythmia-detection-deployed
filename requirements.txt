@@ -10,3 +10,4 @@ shap==0.54.1
 pydantic==2.14.1
 requests==2.34.2
 pytest==7.4.0
+tensorflow==2.21.0
